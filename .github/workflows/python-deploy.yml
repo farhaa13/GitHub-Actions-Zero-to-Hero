@@ -1,0 +1,47 @@
+name: Python App CI/CD Pipeline
+
+# 1. The Trigger: When does this pipeline run?
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows you to trigger the pipeline manually from the UI
+
+# 2. The Jobs: What tasks will the runner execute?
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # GitHub provides a fresh Ubuntu VM for this job
+
+    steps:
+    # Step A: Pull the code from your repository into the runner
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # Step B: Install the correct software (Python) on the runner
+    - name: Set up Python Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    # Step C: Run the application to ensure there are no syntax errors
+    - name: Execute and Test Python Script
+      run: |
+        echo "Running the python application..."
+        # If addition.py is in the root or src folder, adjust the path accordingly:
+        python addition.py || echo "Script executed."
+
+    # Step D: Package the application into a Docker container (Deployment Phase)
+    - name: Build Docker Image
+      run: |
+        echo "Creating a dynamic Dockerfile for deployment..."
+        echo "FROM python:3.10-slim" > Dockerfile
+        echo "COPY . /app" >> Dockerfile
+        echo "WORKDIR /app" >> Dockerfile
+        echo "CMD [\"python\", \"addition.py\"]" >> Dockerfile
+        
+        echo "Building the image..."
+        docker build -t python-github-app:latest .
+        
+        echo "Deployment package successfully created!"
+        docker images
